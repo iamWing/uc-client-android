@@ -4,7 +4,9 @@ package uk.co.alphaowl.ucandroid;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 
 public class UCClientService extends Service {
     // Binder given to clients
@@ -22,6 +24,7 @@ public class UCClientService extends Service {
 
         return mBinder;
     }
+
 
     /* method for clients */
 
