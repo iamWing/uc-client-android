@@ -7,7 +7,6 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import uk.co.alphaowl.uc.IUCCallback;
@@ -109,6 +108,14 @@ public class UCClientService extends Service {
     public void joystick(float x, float y) throws ClientNotInitialisedException {
         if (mRunner != null) {
             mRunner.queueCmd(new JoystickCommand(x, y));
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
+    public void gyro(float x, float y, float z) throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new GyroCommand(x, y, z));
         } else {
             throw new ClientNotInitialisedException();
         }
