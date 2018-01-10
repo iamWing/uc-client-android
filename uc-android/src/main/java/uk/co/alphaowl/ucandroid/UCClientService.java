@@ -4,8 +4,10 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import uk.co.alphaowl.uc.IUCCallback;
 import uk.co.alphaowl.uc.UCClient;
@@ -31,26 +33,23 @@ public class UCClientService extends Service {
 
     /* interfaces */
 
-    public interface IUCServiceListener {
+    public interface IUCServiceListener extends IUCCallback {
         void onIOExceptionCaught(IOException ex);
+
         void onPlayerRegisteredExceptionCaught(PlayerRegisteredException ex);
+
         void onPlayerNotRegisteredExceptionCaught(PlayerNotRegisteredException ex);
     }
 
     /* method for clients */
 
     private IUCServiceListener mListener;
-    private IUCCallback mCallback;
 
     private Thread mWorker;
     private UCConnectionRunnable mRunner;
 
-    public synchronized void setUCServiceListener(IUCServiceListener listener) {
+    public synchronized void setServiceListener(IUCServiceListener listener) {
         mListener = listener;
-    }
-
-    public synchronized void setUCCallback(IUCCallback callback) {
-        mCallback = callback;
     }
 
     public void init(String ip, int port, int bufferSize) {
@@ -61,9 +60,64 @@ public class UCClientService extends Service {
 
         if (mRunner == null) {
             mRunner = new UCConnectionRunnable(ip, port, bufferSize);
-            mRunner.updateListeners(mListener, mCallback);
+            mRunner.setServiceListener(mListener);
             mWorker = new Thread(mRunner);
             mWorker.start();
+        }
+    }
+
+    public void disconect() throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new DisconnectCommand());
+            mRunner = null;
+            mWorker.interrupt();
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
+    public void register(String playerName) throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new RegisterCommand(playerName));
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
+    public void deregister() throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new DeregisterCommand());
+            mRunner = null;
+            mWorker.interrupt();
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
+    public void keyDown(String key, @Nullable String extra) throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            if (extra == null)
+                extra = "";
+
+            mRunner.queueCmd(new KeyDownCommand(key, extra));
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
+    public void joystick(float x, float y) throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new JoystickCommand(x, y));
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
+    public void gyro(float x, float y, float z) throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new GyroCommand(x, y, z));
+        } else {
+            throw new ClientNotInitialisedException();
         }
     }
 
@@ -72,7 +126,8 @@ public class UCClientService extends Service {
     class UCConnectionRunnable implements Runnable {
 
         private IUCServiceListener mListener;
-        private IUCCallback mCallback;
+
+        private LinkedBlockingQueue<IUCCommand> cmdQueue = new LinkedBlockingQueue<>();
 
         private String mIp;
         private int mPort;
@@ -84,19 +139,27 @@ public class UCClientService extends Service {
             mBufferSize = bufferSize;
         }
 
-        synchronized void updateListeners(IUCServiceListener listener, IUCCallback callback) {
+        synchronized void setServiceListener(IUCServiceListener listener) {
             mListener = listener;
-            mCallback = callback;
+        }
+
+        void queueCmd(IUCCommand cmd) {
+            cmdQueue.offer(cmd);
         }
 
 
         @Override
         public void run() {
 
-            UCClient instance;
-
             try {
-                instance = UCClient.init(mIp, mPort, mBufferSize, mCallback);
+                UCClient instance = UCClient.init(mIp, mPort, mBufferSize, mListener);
+
+                while (!Thread.currentThread().isInterrupted()) {
+                    IUCCommand cmd = cmdQueue.poll();
+
+                    if (cmd != null)
+                        cmd.execute(instance, mListener);
+                }
             } catch (IOException ex) {
                 mListener.onIOExceptionCaught(ex);
             }
