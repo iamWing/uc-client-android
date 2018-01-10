@@ -4,8 +4,10 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import uk.co.alphaowl.uc.IUCCallback;
@@ -88,6 +90,17 @@ public class UCClientService extends Service {
             mRunner.queueCmd(new DeregisterCommand());
             mRunner = null;
             mWorker.interrupt();
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
+    public void keyDown(String key, @Nullable String extra) throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            if (extra == null)
+                extra = "";
+
+            mRunner.queueCmd(new KeyDownCommand(key, extra));
         } else {
             throw new ClientNotInitialisedException();
         }
