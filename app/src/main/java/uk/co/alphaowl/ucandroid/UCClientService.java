@@ -15,7 +15,7 @@ public class UCClientService extends Service {
     private final IBinder mBinder = new UCClientServiceBinder();
 
     public class UCClientServiceBinder extends Binder {
-        UCClientService getService() {
+        public UCClientService getService() {
             // Return this instance of UCClientService so clients can call public methods
             return UCClientService.this;
         }
