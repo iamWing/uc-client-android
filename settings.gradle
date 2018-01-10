@@ -1,1 +1,1 @@
-include ':uc-android'
+include ':uc-android', ':app'
