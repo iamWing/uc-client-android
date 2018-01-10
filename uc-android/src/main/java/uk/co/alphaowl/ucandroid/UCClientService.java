@@ -75,6 +75,14 @@ public class UCClientService extends Service {
         }
     }
 
+    public void register(String playerName) throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new RegisterCommand(playerName));
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
     /* for run in background */
 
     class UCConnectionRunnable implements Runnable {
