@@ -36,22 +36,28 @@ public class UCClientService extends Service {
     /* method for clients */
 
     private IUCServiceListener mListener;
+    private IUCCallback mCallback;
 
     private Thread mWorker;
     private UCConnectionRunnable mRunner;
 
-    public void setServiceListener(IUCServiceListener listener) {
+    public synchronized void setUCServiceListener(IUCServiceListener listener) {
         mListener = listener;
     }
 
-    public void init(String ip, int port, int bufferSize, IUCCallback callback) {
+    public synchronized void setUCCallback(IUCCallback callback) {
+        mCallback = callback;
+    }
+
+    public void init(String ip, int port, int bufferSize) {
         if (bufferSize < -1 || bufferSize == 0)
             throw new IllegalArgumentException(
                     "Invalid buffer size. Buffer size must not be < -1 or equals 0."
             );
 
         if (mRunner == null) {
-            mRunner = new UCConnectionRunnable(ip, port, bufferSize, mListener, callback);
+            mRunner = new UCConnectionRunnable(ip, port, bufferSize);
+            mRunner.updateListeners(mListener, mCallback);
             mWorker = new Thread(mRunner);
             mWorker.start();
         }
@@ -64,23 +70,26 @@ public class UCClientService extends Service {
         private IUCServiceListener mListener;
         private IUCCallback mCallback;
 
-        private UCClient instance;
-
         private String mIp;
         private int mPort;
         private int mBufferSize;
 
-        UCConnectionRunnable(String ip, int port, int bufferSize,
-                             IUCServiceListener listener, IUCCallback callback) {
+        UCConnectionRunnable(String ip, int port, int bufferSize) {
             mIp = ip;
             mPort = port;
             mBufferSize = bufferSize;
+        }
+
+        synchronized void updateListeners(IUCServiceListener listener, IUCCallback callback) {
             mListener = listener;
             mCallback = callback;
         }
 
+
         @Override
         public void run() {
+
+            UCClient instance;
 
             try {
                 instance = UCClient.init(mIp, mPort, mBufferSize, mCallback);
