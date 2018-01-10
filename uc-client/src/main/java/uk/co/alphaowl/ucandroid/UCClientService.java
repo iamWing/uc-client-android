@@ -9,6 +9,8 @@ import java.io.IOException;
 
 import uk.co.alphaowl.uc.IUCCallback;
 import uk.co.alphaowl.uc.UCClient;
+import uk.co.alphaowl.uc.exceptions.PlayerNotRegisteredException;
+import uk.co.alphaowl.uc.exceptions.PlayerRegisteredException;
 
 public class UCClientService extends Service {
     // Binder given to clients
@@ -30,7 +32,9 @@ public class UCClientService extends Service {
     /* interfaces */
 
     public interface IUCServiceListener {
-        <T> void returnException(T ex);
+        void onIOExceptionCaught(IOException ex);
+        void onPlayerRegisteredExceptionCaught(PlayerRegisteredException ex);
+        void onPlayerNotRegisteredExceptionCaught(PlayerNotRegisteredException ex);
     }
 
     /* method for clients */
@@ -94,7 +98,7 @@ public class UCClientService extends Service {
             try {
                 instance = UCClient.init(mIp, mPort, mBufferSize, mCallback);
             } catch (IOException ex) {
-                mListener.returnException(ex);
+                mListener.onIOExceptionCaught(ex);
             }
         }
     }
