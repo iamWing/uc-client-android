@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.EditText;
 
 import java.io.IOException;
 
@@ -17,7 +18,7 @@ import uk.co.alphaowl.uc.exceptions.PlayerRegisteredException;
 import uk.co.alphaowl.ucandroid.ClientNotInitialisedException;
 import uk.co.alphaowl.ucandroid.UCClientService;
 
-public class MainActivity extends AppCompatActivity implements UCClientService.IUCServiceListener{
+public class MainActivity extends AppCompatActivity implements UCClientService.IUCServiceListener {
 
     private String ip = "10.194.79.34";
     private int port = 28910;
@@ -33,7 +34,6 @@ public class MainActivity extends AppCompatActivity implements UCClientService.I
 
             mService = binder.getService();
             mService.setServiceListener(MainActivity.this);
-            mService.init(ip, port, -1);
             mBound = true;
         }
 
@@ -48,13 +48,17 @@ public class MainActivity extends AppCompatActivity implements UCClientService.I
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        EditText edtIp = findViewById(R.id.edt_ip);
+        EditText edtName = findViewById(R.id.edt_name);
+
         Button btnRegister = findViewById(R.id.btn_register);
         btnRegister.setOnClickListener(v -> {
             if (mBound) {
                 try {
-                    mService.register("TestPlayer");
-                    Intent intent = new Intent(this, DpadActivity.class);
-                    startActivity(intent);
+                    ip = edtIp.getText().toString();
+                    String name = edtName.getText().toString();
+                    mService.init(ip, port, -1);
+                    mService.register(name);
                 } catch (ClientNotInitialisedException ex) {
                     System.err.println(ex.getMessage());
                 }
@@ -82,7 +86,8 @@ public class MainActivity extends AppCompatActivity implements UCClientService.I
 
     @Override
     public void onPlayerRegistered() {
-
+        Intent intent = new Intent(this, DpadActivity.class);
+        startActivity(intent);
     }
 
     @Override
