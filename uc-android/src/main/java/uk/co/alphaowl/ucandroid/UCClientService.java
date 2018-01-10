@@ -32,7 +32,7 @@ public class UCClientService extends Service {
 
     /* interfaces */
 
-    public interface IUCServiceListener {
+    public interface IUCServiceListener extends IUCCallback {
         void onIOExceptionCaught(IOException ex);
 
         void onPlayerRegisteredExceptionCaught(PlayerRegisteredException ex);
@@ -43,17 +43,12 @@ public class UCClientService extends Service {
     /* method for clients */
 
     private IUCServiceListener mListener;
-    private IUCCallback mCallback;
 
     private Thread mWorker;
     private UCConnectionRunnable mRunner;
 
-    public synchronized void setUCServiceListener(IUCServiceListener listener) {
+    public synchronized void setServiceListener(IUCServiceListener listener) {
         mListener = listener;
-    }
-
-    public synchronized void setUCCallback(IUCCallback callback) {
-        mCallback = callback;
     }
 
     public void init(String ip, int port, int bufferSize) {
@@ -64,7 +59,7 @@ public class UCClientService extends Service {
 
         if (mRunner == null) {
             mRunner = new UCConnectionRunnable(ip, port, bufferSize);
-            mRunner.updateListeners(mListener, mCallback);
+            mRunner.setServiceListener(mListener);
             mWorker = new Thread(mRunner);
             mWorker.start();
         }
@@ -75,7 +70,6 @@ public class UCClientService extends Service {
     class UCConnectionRunnable implements Runnable {
 
         private IUCServiceListener mListener;
-        private IUCCallback mCallback;
 
         private LinkedBlockingQueue<IUCCommand> cmdQueue = new LinkedBlockingQueue<>();
 
@@ -89,9 +83,8 @@ public class UCClientService extends Service {
             mBufferSize = bufferSize;
         }
 
-        synchronized void updateListeners(IUCServiceListener listener, IUCCallback callback) {
+        synchronized void setServiceListener(IUCServiceListener listener) {
             mListener = listener;
-            mCallback = callback;
         }
 
         void queueCmd(IUCCommand cmd) {
@@ -103,7 +96,7 @@ public class UCClientService extends Service {
         public void run() {
 
             try {
-                UCClient instance = UCClient.init(mIp, mPort, mBufferSize, mCallback);
+                UCClient instance = UCClient.init(mIp, mPort, mBufferSize, mListener);
 
                 while (!Thread.currentThread().isInterrupted()) {
                     IUCCommand cmd = cmdQueue.poll();
