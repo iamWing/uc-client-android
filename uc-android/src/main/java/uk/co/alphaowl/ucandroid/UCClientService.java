@@ -83,6 +83,16 @@ public class UCClientService extends Service {
         }
     }
 
+    public void deregister() throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new DeregisterCommand());
+            mRunner = null;
+            mWorker.interrupt();
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
     /* for run in background */
 
     class UCConnectionRunnable implements Runnable {
