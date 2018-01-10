@@ -65,6 +65,16 @@ public class UCClientService extends Service {
         }
     }
 
+    public void disconect() throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new DisconnectCommand());
+            mRunner = null;
+            mWorker.interrupt();
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
     /* for run in background */
 
     class UCConnectionRunnable implements Runnable {
