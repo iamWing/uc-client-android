@@ -19,7 +19,7 @@ import uk.co.alphaowl.ucandroid.UCClientService;
 
 public class MainActivity extends AppCompatActivity implements UCClientService.IUCServiceListener{
 
-    private String ip = "10.211.73.69";
+    private String ip = "10.194.79.34";
     private int port = 28910;
 
     private UCClientService mService;
@@ -53,6 +53,8 @@ public class MainActivity extends AppCompatActivity implements UCClientService.I
             if (mBound) {
                 try {
                     mService.register("TestPlayer");
+                    Intent intent = new Intent(this, DpadActivity.class);
+                    startActivity(intent);
                 } catch (ClientNotInitialisedException ex) {
                     System.err.println(ex.getMessage());
                 }
