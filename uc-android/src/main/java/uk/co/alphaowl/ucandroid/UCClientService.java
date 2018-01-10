@@ -106,6 +106,14 @@ public class UCClientService extends Service {
         }
     }
 
+    public void joystick(float x, float y) throws ClientNotInitialisedException {
+        if (mRunner != null) {
+            mRunner.queueCmd(new JoystickCommand(x, y));
+        } else {
+            throw new ClientNotInitialisedException();
+        }
+    }
+
     /* for run in background */
 
     class UCConnectionRunnable implements Runnable {
