@@ -6,6 +6,7 @@ import android.os.Binder;
 import android.os.IBinder;
 
 import java.io.IOException;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import uk.co.alphaowl.uc.IUCCallback;
 import uk.co.alphaowl.uc.UCClient;
@@ -33,7 +34,9 @@ public class UCClientService extends Service {
 
     public interface IUCServiceListener {
         void onIOExceptionCaught(IOException ex);
+
         void onPlayerRegisteredExceptionCaught(PlayerRegisteredException ex);
+
         void onPlayerNotRegisteredExceptionCaught(PlayerNotRegisteredException ex);
     }
 
@@ -74,6 +77,8 @@ public class UCClientService extends Service {
         private IUCServiceListener mListener;
         private IUCCallback mCallback;
 
+        private LinkedBlockingQueue<IUCCommand> cmdQueue = new LinkedBlockingQueue<>();
+
         private String mIp;
         private int mPort;
         private int mBufferSize;
@@ -89,14 +94,23 @@ public class UCClientService extends Service {
             mCallback = callback;
         }
 
+        void queueCmd(IUCCommand cmd) {
+            cmdQueue.offer(cmd);
+        }
+
 
         @Override
         public void run() {
 
-            UCClient instance;
-
             try {
-                instance = UCClient.init(mIp, mPort, mBufferSize, mCallback);
+                UCClient instance = UCClient.init(mIp, mPort, mBufferSize, mCallback);
+
+                while (!Thread.currentThread().isInterrupted()) {
+                    IUCCommand cmd = cmdQueue.poll();
+
+                    if (cmd != null)
+                        cmd.execute(instance, mListener);
+                }
             } catch (IOException ex) {
                 mListener.onIOExceptionCaught(ex);
             }
