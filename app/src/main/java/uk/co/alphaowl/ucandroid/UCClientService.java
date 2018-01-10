@@ -30,7 +30,7 @@ public class UCClientService extends Service {
     /* interfaces */
 
     public interface IUCServiceListener {
-
+        <T> void returnException(T ex);
     }
 
     /* method for clients */
@@ -85,7 +85,7 @@ public class UCClientService extends Service {
             try {
                 instance = UCClient.init(mIp, mPort, mBufferSize, mCallback);
             } catch (IOException ex) {
-
+                mListener.returnException(ex);
             }
         }
     }
