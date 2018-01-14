@@ -70,6 +70,14 @@ public class MainActivity extends AppCompatActivity implements UCClientService.I
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (mBound)
+            unbindService(conn);
+    }
+
+    @Override
     public void onIOExceptionCaught(IOException ex) {
         System.err.println(ex.getMessage());
     }
